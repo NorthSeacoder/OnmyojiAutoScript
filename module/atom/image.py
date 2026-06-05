@@ -157,6 +157,13 @@ class RuleImage(RuleImageMallResourceMixin):
             logger.error(f"Template image is invalid: {mat.shape}")
             return False  # 模板无效，匹配失败
 
+        if source.shape[0] < mat.shape[0] or source.shape[1] < mat.shape[1]:
+            logger.warning(
+                f"Template image is larger than source: "
+                f"source={source.shape}, template={mat.shape}, target={self.name}"
+            )
+            return False
+
         res = cv2.matchTemplate(source, mat, cv2.TM_CCOEFF_NORMED)
         min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)  # 最小匹配度，最大匹配度，最小匹配度的坐标，最大匹配度的坐标
         if self.debug_mode:

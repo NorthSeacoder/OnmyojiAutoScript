@@ -2,6 +2,7 @@ import math
 import time
 
 import cv2
+from module.base.timer import Timer
 from module.atom.click import RuleClick
 from module.atom.gif import RuleGif
 from module.atom.image import RuleImage
@@ -18,6 +19,21 @@ class LoginAccount(BaseTask, SwitchAccountAssets):
         self.screenshot()
         ocrRes = self.O_SA_LOGIN_FORM_SVR_NAME.ocr(self.device.image)
         return ocrRes
+
+    def current_svr_matches(self, svrName: str, threshold: float = 0.5) -> bool:
+        if not svrName:
+            return False
+        ocr_svr_name = self.get_svr_name()
+        if not ocr_svr_name:
+            return False
+        if svrName == ocr_svr_name:
+            logger.info("current svr is %s", svrName)
+            return True
+        overlap = set(svrName).intersection(set(ocr_svr_name))
+        if len(overlap) > max(len(svrName), len(ocr_svr_name)) * threshold:
+            logger.info("current svr %s is similar with %s", ocr_svr_name, svrName)
+            return True
+        return False
 
     def switch_svr(self, svrName: str):
         """
@@ -202,6 +218,29 @@ class LoginAccount(BaseTask, SwitchAccountAssets):
         logger.info("account [ %s ] not found ", accountInfo.account)
         return False
 
+    def submit_account_login(self, interval: float = 1, timeout: float = 20) -> bool:
+        """
+        Click account login and wait for either platform selection or game login page.
+
+        Cached/known accounts may return directly to the game login page instead of
+        showing the Apple/Android selector.
+        """
+        timer = Timer(timeout).start()
+        clicked = False
+        while 1:
+            self.screenshot()
+            if self.appear(self.I_SA_LOGIN_FORM_APPLE):
+                return True
+            if clicked and (not self.appear(self.I_SA_NETEASE_GAME_LOGO)) and self.appear(self.I_CHECK_LOGIN_FORM):
+                logger.info("Account login returned to game login page")
+                return True
+            if timer.reached():
+                logger.warning("Submit account login timeout")
+                return False
+            if self.appear_then_click(self.I_SA_ACCOUNT_LOGIN_BTN, interval=interval):
+                clicked = True
+                continue
+
     # def loginSubmit(self, appleOrAndroid: bool):
     #     """
     #
@@ -271,7 +310,8 @@ class LoginAccount(BaseTask, SwitchAccountAssets):
                         return False
                     # selectAccount 后更新图片
                     self.screenshot()
-                self.ui_click(self.I_SA_ACCOUNT_LOGIN_BTN, stop=self.I_SA_LOGIN_FORM_APPLE, interval=1)
+                if not self.submit_account_login(interval=1):
+                    return False
                 continue
             # 在用户中心界面
             if self.appear(self.I_SA_SWITCH_ACCOUNT_BTN):
@@ -297,6 +337,9 @@ class LoginAccount(BaseTask, SwitchAccountAssets):
                     continue
 
                 # 已登录 查找对应角色
+                if not isCharacterSelected and self.current_svr_matches(accountInfo.svr):
+                    isCharacterSelected = True
+                    break
                 if not isCharacterSelected and self.switch_character(accountInfo.character):
                     isCharacterSelected = True
                     continue
