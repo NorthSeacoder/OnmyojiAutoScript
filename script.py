@@ -475,6 +475,37 @@ class Script:
             task_module.ScriptTask(config=self.config, device=self.device).run()
         except TaskEnd:
             return True
+        except CooperationInvitationAccepted as e:
+            logger.info(f'Cooperation invitation accepted, start WantedQuests immediately: {e}')
+            # 立即启动 WantedQuests（cooperation_only 模式）
+            try:
+                from pathlib import Path
+                module_name = 'script_task'
+                module_path = str(Path.cwd() / 'tasks' / 'WantedQuests' / (module_name + '.py'))
+                logger.info(f'Loading WantedQuests cooperation battle: {module_path}')
+                task_module = load_module(module_name, module_path)
+
+                # 创建临时的 cooperation_only 配置
+                original_config = self.config.model.wanted_quests.wanted_quests_config.cooperation_only
+                self.config.model.wanted_quests.wanted_quests_config.cooperation_only = True
+
+                try:
+                    task_module.ScriptTask(config=self.config, device=self.device).run()
+                finally:
+                    # 恢复原配置
+                    self.config.model.wanted_quests.wanted_quests_config.cooperation_only = original_config
+
+                logger.info('WantedQuests cooperation battle completed, resume previous task')
+                # 恢复原任务继续执行
+                return self.run(command)
+            except TaskEnd:
+                logger.info('WantedQuests cooperation ended')
+                # 协作完成，恢复原任务
+                return self.run(command)
+            except Exception as cooperation_error:
+                logger.exception(f'Failed to run cooperation WantedQuests: {cooperation_error}')
+                # 协作失败，恢复原任务
+                return self.run(command)
         except GameNotRunningError as e:
             logger.warning(e)
             self.exception_handler(e=e, command=command)

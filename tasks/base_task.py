@@ -113,12 +113,9 @@ class BaseTask(GlobalGameAssets, CostumeBase):
         # 有的时候长战斗 点击后会取消战斗状态
         self.device.detect_record = detect_record
         if click_button == self.I_G_ACCEPT and is_wanted_quests_cooperation:
-            logger.info('Accepted wanted quests cooperation, schedule WantedQuests')
-            self.set_next_run(
-                task='WantedQuests',
-                target=datetime.now().replace(microsecond=0),
-                server=False,
-            )
+            logger.info('Accepted wanted quests cooperation, interrupt current task')
+            from module.exception import CooperationInvitationAccepted
+            raise CooperationInvitationAccepted('WantedQuests cooperation invitation accepted')
         return True
 
     def _is_wanted_quests_cooperation_invitation(self) -> bool:

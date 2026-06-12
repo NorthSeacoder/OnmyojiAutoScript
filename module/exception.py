@@ -60,3 +60,11 @@ class RequestHumanTakeover(Exception):
 
 class TaskEnd(Exception):
     pass
+
+
+class CooperationInvitationAccepted(Exception):
+    """
+    Raised when accepting a wanted quests cooperation invitation.
+    The current task should be interrupted and WantedQuests should start immediately.
+    """
+    pass
