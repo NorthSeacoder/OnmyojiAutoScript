@@ -269,8 +269,53 @@ class ScriptTask(WQExplore, SecretScriptTask, WantedQuestsAssets):
         #     self.trace_one(self.I_WQ_INVITE_3)
 
         # 追踪任务 并邀请
-        self.all_cooperation_invite()
+        invite_results = self.all_cooperation_invite()
 
+        # 检查是否有成功的邀请
+        has_successful_invite = any(item.get('inviteResult', False) for item in invite_results)
+
+        if not has_successful_invite:
+            logger.warning("No successful cooperation invite, skip battle")
+            self.ui_click_until_disappear(self.I_UI_BACK_RED)
+            self.ui_goto(page_exploration)
+            return True
+
+        # 等待大号接受邀请并进入战斗准备页面
+        logger.info("Waiting for friend to accept cooperation invite...")
+        wait_timer = Timer(60).start()  # 60秒超时
+        battle_entered = False
+
+        while not wait_timer.reached():
+            self.screenshot()
+            # 检查是否进入战斗准备页面
+            if self.appear(self.I_PREPARE_HIGHLIGHT) or self.appear(self.I_PREPARE_DARK):
+                logger.info("Friend accepted, entering battle preparation")
+                battle_entered = True
+                break
+            # 处理可能的弹窗
+            if self.appear(self.I_UI_CONFIRM_SAMLL):
+                self.click(self.I_UI_CONFIRM_SAMLL)
+                continue
+            sleep(1)
+
+        if not battle_entered:
+            logger.warning("Wait for cooperation accept timeout (60s), skip battle")
+            self.ui_click_until_disappear(self.I_UI_BACK_RED)
+            self.ui_goto(page_exploration)
+            return True
+
+        # 进入战斗流程（作为队员参战）
+        logger.info("Starting cooperation battle as team member")
+        try:
+            from tasks.Component.GeneralBattle.config_general_battle import GeneralBattleConfig
+            battle_config = GeneralBattleConfig(lock_team_enable=True)
+            self.run_general_battle(config=battle_config)
+            logger.info("Cooperation battle completed")
+        except Exception as e:
+            logger.exception(f"Cooperation battle failed: {e}")
+            # 战斗失败也尝试返回探索界面
+
+        # 战斗结束，返回探索界面
         self.ui_click_until_disappear(self.I_UI_BACK_RED)
         self.ui_goto(page_exploration)
         return True
