@@ -479,7 +479,6 @@ class Script:
             logger.info(f'Cooperation invitation accepted, start WantedQuests immediately: {e}')
             # 立即启动 WantedQuests（cooperation_only 模式）
             try:
-                from pathlib import Path
                 module_name = 'script_task'
                 module_path = str(Path.cwd() / 'tasks' / 'WantedQuests' / (module_name + '.py'))
                 logger.info(f'Loading WantedQuests cooperation battle: {module_path}')
