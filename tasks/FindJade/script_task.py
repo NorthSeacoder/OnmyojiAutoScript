@@ -25,27 +25,40 @@ class ScriptTask(GameUi, FindJadeAssets):
             if not suc:
                 logger.warning("switch to %s-%s Failed", accountInfo.character, accountInfo.svr)
                 continue
-            #
-            wq = self.CreatObjectFromModule("WantedQuests", config=self.config, device=self.device)
-            wq.fade_conf = self.fade_conf
-
-            try:
-                wq.run()
-            except TaskEnd as e:
-                logger.warning("%s-%s TaskEnd", accountInfo.character, accountInfo.svr)
-                # 更新配置文件中的时间
+            if self.run_current_account(accountInfo):
                 self.fade_conf.update_account_login_history(accountInfo)
                 self.save_config()
                 continue
-            except RequestHumanTakeover as e:
-                raise
-            except Exception as e:
-                logger.error(e)
-                self.next_run("FindJade", success=False)
+            self.next_run("FindJade", success=False)
         self.next_run("FindJade", success=True)
         raise TaskEnd("FindJade")
         pass
 
+    def run_current_account(self, account_info: AccountInfo = None) -> bool:
+        """
+        Run the cooperation-only WantedQuests flow for the currently logged-in account.
+
+        This is intentionally separate from run(), so SubAccountRotation can reuse
+        the FindJade/WantedQuests cooperation logic without starting FindJade's
+        own small-account loop.
+        """
+        self.fade_conf = self.config.find_jade
+        wq = self.CreatObjectFromModule("WantedQuests", config=self.config, device=self.device)
+        wq.fade_conf = self.fade_conf
+
+        try:
+            wq.run()
+        except TaskEnd:
+            if account_info is not None:
+                logger.warning("%s-%s TaskEnd", account_info.character, account_info.svr)
+            return True
+        except RequestHumanTakeover:
+            raise
+        except Exception as e:
+            logger.exception(e)
+            return False
+        logger.warning("FindJade current account returned without TaskEnd")
+        return False
 
     def is_need_login(self, item: AccountInfo):
         """

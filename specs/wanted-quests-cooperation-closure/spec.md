@@ -36,10 +36,10 @@
    **When** 大号侧 `_burst()` 检测并点击接受
    **Then** `oas_main` 配置中的 `wanted_quests.scheduler.next_run` 被设置为当前时间，且调度器后续能将 `WantedQuests` 放入 pending 或立即执行。
 
-2. **[US1-2] 已禁用悬赏时仍可触发协作执行**
-   **Given** 用户没有在常规日常中启用 `WantedQuests`，但开启了协作邀请处理
+2. **[US1-2] 悬赏调度配置可被检查和修正**
+   **Given** 用户开启了协作邀请处理，但大号实例的 `WantedQuests.scheduler.enable` 可能未开启
    **When** 大号接受小号协作邀请
-   **Then** 系统仍能以强制任务调用方式触发 `WantedQuests`，避免被普通 enable 状态拦截。
+   **Then** 系统不绕过用户禁用语义；配置检查脚本必须指出 `WantedQuests` 不可达，并可在显式修正参数下启用或提示用户手动启用。
 
 **Edge Cases**:
 
@@ -53,11 +53,11 @@
 
 ### Functional Requirements
 
-- **FR-001**: 系统必须在接受符合策略的悬赏协作邀请后，调用大号配置中的 `WantedQuests` 调度。
+- **FR-001**: 系统必须在接受符合策略的悬赏协作邀请后，以最小侵入方式写入大号配置中的 `WantedQuests.scheduler.next_run`。
 - **FR-002**: 系统必须保留现有 `friend_invitation` 策略，不改变用户对接受、拒绝、仅勾协、勾协粮协等选项的含义。
 - **FR-003**: 系统必须在日志中输出协作接受和 `WantedQuests` 调用的可追踪信息。
 - **FR-004**: 系统必须避免把普通组队邀请误判为需要执行 `WantedQuests` 的悬赏协作。
-- **FR-005**: 配置脚本或文档必须说明 `oas_main` 需要让 `WantedQuests` 不被调度规则过滤。
+- **FR-005**: 配置脚本或文档必须说明 `oas_main` 需要启用 `WantedQuests`，且不能被调度规则过滤。
 
 ### Non-Functional Requirements
 
@@ -68,13 +68,13 @@
 
 | 属性 | 目标 | 为什么重要 | 验收 / 证据 | 是否阻塞 plan |
 |------|------|------------|-------------|----------------|
-| 一致性 | 接受协作后必有调度动作 | 避免 producer 产生协作任务但 consumer 不消费 | 日志出现接受邀请和 `Task call: wanted_quests` 或等价信息 | 是 |
+| 一致性 | 接受协作后必有调度动作 | 避免 producer 产生协作任务但 consumer 不消费 | 日志出现接受邀请和 `WantedQuests.next_run` 更新或等价信息 | 是 |
 | 可用性 | 不中断当前战斗或正在执行任务 | 大号可能在刷御魂/结界/斗技 | 当前任务结束后 pending 可见 | 是 |
 | 可演进性 | 后续小号编排可依赖该闭环 | `FindJade`、小号日常编排都需要大号消费协作 | Feature 2 可直接复用 | 否 |
 
 ### Key Entities
 
-- **协作邀请**: 游戏内好友发来的悬赏协作弹窗，可能是勾玉、粮食、体力、金币类型。
+- **协作邀请**: 游戏内好友发来的悬赏协作弹窗。当前全局突发素材可识别勾玉、猫粮、狗粮；体力、金币需要后续补充突发弹窗素材后再纳入自动识别。
 - **Accepted Cooperation Artifact**: 大号接受后进入悬赏列表的协作任务。
 - **WantedQuests Consumer**: 大号侧负责追踪和执行协作任务的任务模块。
 

@@ -7,6 +7,12 @@ from pathlib import Path
 from module.logger import logger
 
 class ConfigManager:
+    @staticmethod
+    def is_config_file(path: Path) -> bool:
+        if path.suffix != '.json':
+            return False
+        return '.before_' not in path.stem
+
 
     @staticmethod
     def all_script_files() -> list[str]:
@@ -19,6 +25,8 @@ class ConfigManager:
         json_files = config_path.glob('*.json')
         result = []
         for json in json_files:
+            if not ConfigManager.is_config_file(json):
+                continue
             if json.stem == 'template':
                 continue
             result.append(json.stem)
@@ -39,6 +47,8 @@ class ConfigManager:
         json_files = config_path.glob('*.json')
         result = []
         for json in json_files:
+            if not ConfigManager.is_config_file(json):
+                continue
             if json.stem == 'template':
                 result.insert(0, json.stem)
             else:

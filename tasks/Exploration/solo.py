@@ -112,7 +112,7 @@ class SoloExploration(BaseExploration):
             logger.info(f'[run_leader] Current scene: {scene.name}')
             # 探索大世界
             if scene == Scene.WORLD:
-                self.wait_until_stable(self.I_CHECK_EXPLORATION, timeout=5)
+                self.wait_until_stable(self.I_CHECK_EXPLORATION, timeout=Timer(5))
                 # 打开右边箭头
                 self.ui_click(click=self.I_EXP_ARROW_LEFT, stop=self.I_EXP_ARROW_RIGHT,timeout=3, interval=2)
                 # 处理识别页面出错的情况

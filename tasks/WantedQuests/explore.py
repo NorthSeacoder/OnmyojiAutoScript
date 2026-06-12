@@ -27,15 +27,28 @@ class WQExplore(BaseExploration, HighLight):
         _cnt_exploration = 0
         search_fail_cnt = 0
         search_fail_timer = Timer(3.2)  # 这里设置的时间一定要大于S_SWIPE_BACKGROUND_RIGHT滑动的时间
+        # 等待进入副本入口页。若 goto 点击无反应（活动副本/陌生界面），加自身超时，
+        # 避免空转直到全局 GameStuck（60s）兜底，连环失败拖垮整个调度。
+        enter_timer = Timer(40).start()
         while 1:
             self.screenshot()
             if self.appear(self.I_UI_BACK_YELLOW) and self.appear(self.I_E_EXPLORATION_CLICK):
                 break
             if self.appear_then_click(goto, interval=2):
+                enter_timer.reset()
                 continue
+            if enter_timer.reached():
+                logger.warning('Explore enter stuck, force back to exploration')
+                self.appear_then_click(self.I_UI_BACK_YELLOW, interval=1)
+                return
 
+        # 仅对持续处于 UNKNOWN（陌生界面）做兜底：任何已知场景都会重置该计时器，
+        # 不影响正常的长探索流程；持续无法识别 40s 则强退，避免空转触发全局 GameStuck。
+        unknown_timer = Timer(40)
         while 1:
             scene = self.get_current_scene(reuse_screenshot=False)
+            if scene != Scene.UNKNOWN:
+                unknown_timer.reset()
             # 进入探索
             if scene == Scene.ENTRANCE:
                 if _cnt_exploration >= num:
@@ -101,6 +114,12 @@ class WQExplore(BaseExploration, HighLight):
             elif scene == Scene.BATTLE_PREPARE:
                 self.ui_click_until_disappear(self.I_PREPARE_HIGHLIGHT, interval=0.5)
             elif scene == Scene.UNKNOWN:
+                if not unknown_timer.started():
+                    unknown_timer.start()
+                if unknown_timer.reached():
+                    logger.warning('Explore stuck on unknown scene, force back to exploration')
+                    self.appear_then_click(self.I_UI_BACK_YELLOW, interval=1)
+                    return
                 continue
 
 

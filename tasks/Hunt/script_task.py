@@ -5,7 +5,7 @@ from time import sleep
 from datetime import timedelta, datetime, time
 from cached_property import cached_property
 
-from module.exception import TaskEnd
+from module.exception import GameStuckError, GameTooManyClickError, TaskEnd
 from module.logger import logger
 from module.base.timer import Timer
 
@@ -27,28 +27,33 @@ class ScriptTask(GameUi, GeneralBattle, GeneralInvite, SwitchSoul, HuntAssets):
         if not self.check_datetime():
             # 设置下次运行时间 为今天的晚上七点钟
             raise TaskEnd('Hunt')
-        con = self.config.hunt.hunt_config
-        if con.kirin_group_team != '-1,-1' or con.netherworld_group_team != '-1,-1':
+        try:
+            con = self.config.hunt.hunt_config
+            if con.kirin_group_team != '-1,-1' or con.netherworld_group_team != '-1,-1':
+                self.ui_get_current_page()
+                self.ui_goto(page_shikigami_records)
+
+                if self.kirin_day:
+                    if con.kirin_group_team != '-1,-1':
+                        self.run_switch_soul(con.kirin_group_team)
+                else:
+                    if con.netherworld_group_team != '-1,-1':
+                        self.run_switch_soul(con.netherworld_group_team)
             self.ui_get_current_page()
-            self.ui_goto(page_shikigami_records)
-
             if self.kirin_day:
-                if con.kirin_group_team != '-1,-1':
-                    self.run_switch_soul(con.kirin_group_team)
+                self.ui_goto(page_hunt_kirin)
+                self.kirin()
             else:
-                if con.netherworld_group_team != '-1,-1':
-                    self.run_switch_soul(con.netherworld_group_team)
-        self.ui_get_current_page()
-        if self.kirin_day:
-            self.ui_goto(page_hunt_kirin)
-            self.kirin()
-        else:
-            self.ui_goto(page_hunt)
-            self.netherworld()
-        sleep(1)
+                self.ui_goto(page_hunt)
+                self.netherworld()
+            sleep(1)
 
-        self.plan_tomorrow_hunt()
-        raise TaskEnd('Hunt')
+            self.plan_tomorrow_hunt()
+            raise TaskEnd('Hunt')
+        except (GameStuckError, GameTooManyClickError):
+            logger.warning("Hunt failed before completion, delay by failure interval")
+            self.set_next_run(task='Hunt', success=False, finish=True)
+            raise
 
     def check_datetime(self) -> bool:
         """
@@ -194,4 +199,3 @@ if __name__ == '__main__':
     t.screenshot()
 
     t.run()
-

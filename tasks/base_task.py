@@ -73,6 +73,7 @@ class BaseTask(GlobalGameAssets, CostumeBase):
         logger.info('Invitation appearing')
         invite_type = self.config.global_game.emergency.friend_invitation
         detect_record = self.device.detect_record
+        is_wanted_quests_cooperation = self._is_wanted_quests_cooperation_invitation()
         match invite_type:
             case FriendInvitation.ACCEPT:
                 logger.info(f"Accept friend invitation")
@@ -111,10 +112,21 @@ class BaseTask(GlobalGameAssets, CostumeBase):
                 continue
         # 有的时候长战斗 点击后会取消战斗状态
         self.device.detect_record = detect_record
-        # 如果接受邀请则立即执行悬赏任务
-        if click_button == self.I_G_ACCEPT:
-            self.set_next_run(task='WantedQuests', target=datetime.now().replace(microsecond=0))
+        if click_button == self.I_G_ACCEPT and is_wanted_quests_cooperation:
+            logger.info('Accepted wanted quests cooperation, schedule WantedQuests')
+            self.set_next_run(
+                task='WantedQuests',
+                target=datetime.now().replace(microsecond=0),
+                server=False,
+            )
         return True
+
+    def _is_wanted_quests_cooperation_invitation(self) -> bool:
+        return (
+            self.appear(self.I_G_JADE)
+            or self.appear(self.I_G_CAT_FOOD)
+            or self.appear(self.I_G_DOG_FOOD)
+        )
 
     def screenshot(self):
         """

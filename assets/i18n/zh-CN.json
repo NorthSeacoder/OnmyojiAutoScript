@@ -36,6 +36,18 @@
   "close_emulator_wait_duration_help": "距离下一个任务超过此分钟数时关闭模拟器；设为0表示禁用",
   "emulator_startup_lead_time": "模拟器预热时间",
   "emulator_startup_lead_time_help": "在开始运行任务之前提前启动模拟器的时间",
-  "exit_four_help": "支持打九退四，保证稳定57级，要求设置好战斗主题，即 脚本->全局配置->游戏装饰自定义->战斗主题"
+  "exit_four_help": "支持打九退四，保证稳定57级，要求设置好战斗主题，即 脚本->全局配置->游戏装饰自定义->战斗主题",
+  "SubAccountRotation": "小号轮换",
+  "sub_account_rotation_config": "小号轮换配置",
+  "account_source": "账号来源",
+  "account_source_help": "小号列表的来源。当前复用「寻觅曜石(FindJade)」里配置的助阵账号列表。",
+  "enabled_sub_tasks": "启用的子任务",
+  "enabled_sub_tasks_help": "本轮换对每个小号要执行的子任务，用英文逗号分隔。可选值：LoginOnly(仅登录收取)、Orochi(御魂)、FindJade(悬赏协作)、MysteryShop(神秘商店)、DailyTriflesStoreSign(商店日常礼包/50天黑蛋)、Hunt(麒麟/阴界)、TalismanPass(花合战收菜)、Exploration(困难28探索)、AreaBoss(地域鬼王)。默认只启用 LoginOnly。",
+  "account_interval": "账号间隔",
+  "account_interval_help": "同一小号的同一子任务两次执行之间的最小间隔，到期才会再次轮换执行。默认13小时。",
+  "continue_on_switch_failure": "切号失败继续",
+  "continue_on_switch_failure_help": "某个小号登录/切换失败时，是否跳过该小号继续处理后续小号。关闭则整体中止本次轮换。",
+  "max_accounts_per_run": "单次最多处理账号数",
+  "max_accounts_per_run_help": "单次轮换最多处理的小号数量，0表示不限制。"
 }
 

@@ -449,14 +449,29 @@ class ScriptTask(WQExplore, SecretScriptTask, WantedQuestsAssets):
                         self.device.click_record_clear()
                     continue
             success = self.run_general_battle(self.battle_config)
+        # 退出秘闻副本。活动副本（如河畔童谣）界面与常规秘闻不同，
+        # I_CHECK_SECRET_ZONES / 红蓝返回都可能匹配不上，导致循环空转直到全局
+        # GameStuck（60s）兜底，连环失败 3 次会停掉整个调度。
+        # 这里加左上角黄色返回兜底点击 + 自身超时，保证遇到陌生界面也能退出。
+        exit_timer = Timer(40).start()
         while 1:
             self.screenshot()
             if self.appear(self.I_CHECK_SECRET_ZONES):
                 break
             if self.appear_then_click(self.I_UI_BACK_RED, interval=1):
+                exit_timer.reset()
                 continue
             if self.appear_then_click(self.I_UI_BACK_BLUE, interval=1.5):
+                exit_timer.reset()
                 continue
+            # 红蓝返回都没匹配上，尝试左上角黄色返回（活动副本层级选择页）
+            if self.appear_then_click(self.I_UI_BACK_YELLOW, interval=1.5):
+                exit_timer.reset()
+                continue
+            # 任何返回都点不动且持续 40s，直接退到大世界，避免空转触发全局卡死
+            if exit_timer.reached():
+                logger.warning('Secret exit stuck, force back to exploration')
+                break
         self.ui_get_current_page()
         self.ui_goto(page_exploration)
         self.wait_until_stable(self.I_CHECK_EXPLORATION)
@@ -729,8 +744,11 @@ class ScriptTask(WQExplore, SecretScriptTask, WantedQuestsAssets):
         # 没有检测到斜杠，符合格式：前N位与后N位相同,表示已完成
         reg_XX = re.compile(r'^(\d+)\1$')
         completed_only = False
+        previous_progress_completed = False
+        last_fengyin_completed = False
         for index, res in enumerate(res_list):
             if reg_fengyin.match(res.ocr_text):
+                last_fengyin_completed = previous_progress_completed
                 continue
             if reg_time.match(res.ocr_text):
                 continue
@@ -749,14 +767,18 @@ class ScriptTask(WQExplore, SecretScriptTask, WantedQuestsAssets):
                 if cu == total:
                     # 该任务已完成，一般是悬赏任务，邀请人没有做导致的
                     completed_only = True
+                    previous_progress_completed = True
                     continue
+                previous_progress_completed = False
                 return cu, re, total, xywh
             # 例如：1414 66 1212
             if reg_XX.match(res.ocr_text):
+                completed_only = True
+                previous_progress_completed = True
                 continue
             # 什么都没匹配上，判断上一个识别结果如果为悬赏封印，那么认为该识别结果错误，尝试执行一次
             last_index = (index - 1) if index > 0 else 0
-            if reg_fengyin.match(res_list[last_index].ocr_text):
+            if reg_fengyin.match(res_list[last_index].ocr_text) and not last_fengyin_completed:
                 return 0, 1, 3, calc_xywh(res_list[last_index].box)
 
         if completed_only:

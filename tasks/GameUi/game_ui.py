@@ -23,6 +23,7 @@ from module.logger import logger
 from tasks.Component.GeneralBattle.assets import GeneralBattleAssets
 from tasks.GameUi.assets import GameUiAssets
 from tasks.GameUi.page import Page, PageRegistry, page_main, random_click
+from tasks.GlobalGame.assets import GlobalGameAssets
 from tasks.Restart.assets import RestartAssets
 from tasks.SixRealms.assets import SixRealmsAssets
 from tasks.base_task import BaseTask
@@ -119,6 +120,9 @@ class GameUi(BaseTask, GameUiAssets):
         while 1:
             self.maybe_screenshot(skip_first_screenshot)
             skip_first_screenshot = False
+            if self.handle_global_popup():
+                timeout = Timer(10, count=20).start()
+                continue
             # 如果10S还没有到底，那么就抛出异常
             if timeout.reached():
                 break
@@ -245,12 +249,23 @@ class GameUi(BaseTask, GameUiAssets):
         :return: 执行了关闭返回True, 否则False
         """
         self.maybe_screenshot(skip_screenshot)
+        if self.handle_global_popup(skip_screenshot=True):
+            return True
         timer = Timer(None).start()
         for close in self.ui_close:
             if self.appear_then_click(close, interval=1.5):
                 logger.warning('Trying to switch to supported page')
                 logger.info(f'[{timer.current():.1f}s]Click {close} on {self.ui_current} success')
                 return True
+        return False
+
+    def handle_global_popup(self, skip_screenshot: bool = True) -> bool:
+        self.maybe_screenshot(skip_screenshot)
+        for popup in (GlobalGameAssets.I_NETWORK_ERROR, GlobalGameAssets.I_NETWORK_ABNORMAL):
+            if self.appear(popup):
+                if self.appear_then_click(GlobalGameAssets.I_UI_CONFIRM):
+                    logger.warning(f'Handled global popup {popup}')
+                    return True
         return False
 
     def _execute_path(self, path: list, timeout_timer):

@@ -1,6 +1,7 @@
 # This Python file uses the following encoding: utf-8
 # @author runhey
 # github https://github.com/runhey
+from datetime import datetime, timedelta
 import time
 
 import cv2
@@ -16,7 +17,7 @@ from tasks.Component.SwitchSoul.switch_soul import SwitchSoul
 from tasks.AreaBoss.assets import AreaBossAssets
 from tasks.AreaBoss.config_boss import AreaBossFloor
 from module.logger import logger
-from module.exception import TaskEnd
+from module.exception import GameStuckError, GameTooManyClickError, TaskEnd
 from module.atom.image import RuleImage
 from typing import List
 
@@ -28,6 +29,30 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, AreaBossAssets):
         运行脚本
         :return:
         """
+        if not self._challenge_window_available():
+            self._delay_until_challenge_window()
+            raise TaskEnd
+
+        try:
+            self._run()
+        except (GameStuckError, GameTooManyClickError):
+            logger.warning("AreaBoss failed before completion, delay by failure interval")
+            self.set_next_run(task='AreaBoss', success=False, finish=True)
+            raise
+
+    @staticmethod
+    def _challenge_window_available() -> bool:
+        return 6 <= datetime.now().hour < 24
+
+    def _delay_until_challenge_window(self) -> None:
+        now = datetime.now().replace(microsecond=0)
+        target = now.replace(hour=6, minute=0, second=0)
+        if now >= target:
+            target += timedelta(days=1)
+        logger.warning(f"AreaBoss is only available from 06:00 to 24:00, delay to {target}")
+        self.set_next_run(task='AreaBoss', target=target, server=False)
+
+    def _run(self) -> bool:
         # 直接手动关闭这个锁定阵容的设置
         self.config.area_boss.general_battle.lock_team_enable = False
         con = self.config.area_boss.boss

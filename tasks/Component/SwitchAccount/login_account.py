@@ -14,11 +14,52 @@ from tasks.base_task import BaseTask
 
 
 class LoginAccount(BaseTask, SwitchAccountAssets):
+    C_SA_SELECT_REGION_CLOSE = RuleClick(
+        roi_front=(1045, 80, 70, 70),
+        roi_back=(1045, 80, 70, 70),
+        name="sa_select_region_close",
+    )
+    O_SA_SELECT_REGION_TITLE = RuleOcr(
+        roi=(500, 45, 280, 85),
+        area=(500, 45, 280, 85),
+        mode="Single",
+        method="Default",
+        keyword="",
+        name="sa_select_region_title",
+    )
+    O_SA_SELECT_REGION_EXISTING_CHARACTER = RuleOcr(
+        roi=(215, 125, 190, 80),
+        area=(215, 125, 190, 80),
+        mode="Single",
+        method="Default",
+        keyword="",
+        name="sa_select_region_existing_character",
+    )
 
     def get_svr_name(self):
         self.screenshot()
         ocrRes = self.O_SA_LOGIN_FORM_SVR_NAME.ocr(self.device.image)
         return ocrRes
+
+    def appear_select_server_overlay(self) -> bool:
+        if self.appear(self.I_SA_CHECK_SELECT_SVR_1) or self.appear(self.I_SA_CHECK_SELECT_SVR_2):
+            return True
+
+        return self.appear_select_region_overlay()
+
+    def appear_select_region_overlay(self) -> bool:
+        title = self.O_SA_SELECT_REGION_TITLE.ocr_single(self.device.image)
+        existing_character = self.O_SA_SELECT_REGION_EXISTING_CHARACTER.ocr_single(self.device.image)
+        if ("选择" in title and "区域" in title) or ("已有" in existing_character and "角色" in existing_character):
+            logger.info("Select server overlay detected: %s / %s", title, existing_character)
+            return True
+        return False
+
+    def close_select_server_overlay(self):
+        if self.appear(self.I_SA_CHECK_SELECT_SVR_1) or self.appear(self.I_SA_CHECK_SELECT_SVR_2):
+            self.click(self.C_SA_LOGIN_FORM_CANCEL_SVR_SELECT)
+        else:
+            self.click(self.C_SA_SELECT_REGION_CLOSE, interval=1.5)
 
     def current_svr_matches(self, svrName: str, threshold: float = 0.5) -> bool:
         if not svrName:
@@ -285,9 +326,10 @@ class LoginAccount(BaseTask, SwitchAccountAssets):
         self.O_SA_LOGIN_FORM_USER_CENTER_ACCOUNT.keyword = accountInfo.account
         while 1:
             self.screenshot()
-            # 处于 选择服务器界面 直接点击空白区域退出该界面 进入切换账号流程
-            if self.appear(self.I_SA_CHECK_SELECT_SVR_1) or self.appear(self.I_SA_CHECK_SELECT_SVR_2):
-                self.click(self.C_SA_LOGIN_FORM_CANCEL_SVR_SELECT)
+            # 同区小号不需要走选择区域流程；这个浮层只作为偶发遮挡处理。
+            # 关闭后继续走当前服务器匹配判断，避免误点用户中心。
+            if self.appear_select_server_overlay():
+                self.close_select_server_overlay()
                 continue
 
             # 处于选择 苹果安卓界面
@@ -312,6 +354,7 @@ class LoginAccount(BaseTask, SwitchAccountAssets):
                     self.screenshot()
                 if not self.submit_account_login(interval=1):
                     return False
+                isAccountLogon = True
                 continue
             # 在用户中心界面
             if self.appear(self.I_SA_SWITCH_ACCOUNT_BTN):

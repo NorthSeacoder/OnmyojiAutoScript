@@ -33,6 +33,7 @@ class ConfigMenu:
             "Hyakkiyakou",
             "HeroTest",
             "FindJade",
+            "SubAccountRotation",
             "MemoryScrolls"
         ]
         # 阴阳寮
