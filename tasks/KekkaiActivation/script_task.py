@@ -260,7 +260,7 @@ class ScriptTask(KU, KekkaiActivationAssets):
                     if not self.appear(self.I_A_EMPTY):
                         self.config.kekkai_activation.activation_config.card_not_found_count = 0
                         self.config.save()
-                        message = f'✅ 确认挂卡: {rule}'
+                        message = f'确认挂卡: {rule}'
                         self.save_image(content=message, push_flag=False, wait_time=0)
                         return
                     if self.click(target, interval=1):
@@ -339,7 +339,7 @@ class ScriptTask(KU, KekkaiActivationAssets):
 
         if activation_config.card_not_found_count >= retry_count:
             # 达到重试上限时的处理
-            log_msg = f"⚠️{activation_config.card_type}卡未检出（累计{retry_count}次），{retry_minutes}分钟后重试"
+            log_msg = f"{activation_config.card_type}卡未检出（累计{retry_count}次），{retry_minutes}分钟后重试"
             activation_config.card_not_found_count = 0  # 重置计数器并延长下次执行时间
             next_run = datetime.now() + timedelta(minutes=retry_minutes)
         else:
@@ -349,7 +349,7 @@ class ScriptTask(KU, KekkaiActivationAssets):
                 if activation_config.card_type == CardType.TAIKO
                 else CardType.TAIKO
             )
-            log_msg = f"🔄{activation_config.card_type}卡未检出 → 切换{new_type}"
+            log_msg = f"{activation_config.card_type}卡未检出 -> 切换{new_type}"
             activation_config.card_type = new_type
             next_run = datetime.now()
 

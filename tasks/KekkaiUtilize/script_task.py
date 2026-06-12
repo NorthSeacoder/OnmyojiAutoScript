@@ -514,9 +514,9 @@ class ScriptTask(GameUi, ReplaceShikigami, KekkaiUtilizeAssets):
             """获取资源匹配的档位索引"""
             for idx, val in enumerate(preset_values):
                 if current_value >= val:
-                    logger.info(f'📊 {resource_name}区间匹配: {current_value} ≥ {val} (档位{idx})')
+                    logger.info(f'{resource_name}区间匹配: {current_value} >= {val} (档位{idx})')
                     return idx
-            logger.warning(f'⚠️ {resource_name}值[{current_value}]低于所有预设')
+            logger.warning(f'{resource_name}值[{current_value}]低于所有预设')
             return MAX_INDEX
 
         while True:
@@ -526,10 +526,10 @@ class ScriptTask(GameUi, ReplaceShikigami, KekkaiUtilizeAssets):
             if self.ap_max_num == 0 and self.jade_max_num == 0:
                 logger.hr('第一阶段：初始记录获取', 2)
                 if self._current_select_best():
-                    logger.info(f'✅ 完美结界卡确认成功，重置状态')
+                    logger.info(f'完美结界卡确认成功，重置状态')
                     self.ap_max_num, self.jade_max_num = 0, 0
                     return True
-                logger.info(f'📝 记录最佳值 | 斗鱼:{self.ap_max_num} 太鼓:{self.jade_max_num}')
+                logger.info(f'记录最佳值 | 斗鱼:{self.ap_max_num} 太鼓:{self.jade_max_num}')
                 return False
 
             logger.hr('第二阶段：资源优先级判断', 2)
@@ -539,22 +539,22 @@ class ScriptTask(GameUi, ReplaceShikigami, KekkaiUtilizeAssets):
 
             # 双资源超限处理
             if ap_index == MAX_INDEX and jade_index == MAX_INDEX:
-                logger.warning('🔄 斗鱼和太鼓均低于预设，重置初始记录')
+                logger.warning('斗鱼和太鼓均低于预设，重置初始记录')
                 self.ap_max_num, self.jade_max_num = 0, 0
                 return False
 
             # 决策优先级
             res_type, target = ('斗鱼', self.ap_max_num) if ap_index <= jade_index else ('太鼓', self.jade_max_num)
-            logger.info(f'⚖️ 选择{res_type}卡 | 目标: {target}')
+            logger.info(f'选择{res_type}卡 | 目标: {target}')
 
             # 第三阶段：执行选卡操作
             logger.hr('第三阶段：执行选卡操作', 2)
             if self._current_select_best(res_type, target, selected_card=True):
-                logger.info(f'✅ {res_type}卡确认成功，重置状态')
+                logger.info(f'{res_type}卡确认成功，重置状态')
                 self.ap_max_num, self.jade_max_num = 0, 0
                 return True
             else:
-                logger.warning(f'❌ {res_type}卡确认失败，重置状态')
+                logger.warning(f'{res_type}卡确认失败，重置状态')
                 self.ap_max_num, self.jade_max_num = 0, 0
                 return False
 
@@ -587,7 +587,7 @@ class ScriptTask(GameUi, ReplaceShikigami, KekkaiUtilizeAssets):
         for swipe_count in range(MAX_SWIPES + 1):
             # 超时检测
             if timer.reached():
-                logger.warning('⏰ 操作超时，终止流程')
+                logger.warning('操作超时，终止流程')
                 return None
 
             # ------ 步骤1: 截图识别结界卡 ------#
@@ -600,7 +600,7 @@ class ScriptTask(GameUi, ReplaceShikigami, KekkaiUtilizeAssets):
                 logger.info(f'第{swipe_count}次滑动 | 未检测到结界卡' if swipe_count > 0 else '初始界面 | 未检测到结界卡')
                 # 连续无卡超过阈值则终止
                 if miss_count > CONSEC_MISS:
-                    logger.warning(f'⚠️ 连续{miss_count}次 | 未检测到结界卡, 终止流程')
+                    logger.warning(f'连续{miss_count}次 | 未检测到结界卡, 终止流程')
                     return None
                 # 执行滑动操作
                 self.perform_swipe_action()
@@ -624,30 +624,30 @@ class ScriptTask(GameUi, ReplaceShikigami, KekkaiUtilizeAssets):
 
                 # 跳过无效结界卡（类型未知或数值异常）
                 if card_type == 'unknown' or card_value <= 0 or card_type not in RESOURCE_CONFIG:
-                    logger.info(f'⏭️ 跳过无效卡: {card_type}@{card_value}')
+                    logger.info(f'跳过无效卡: {card_type}@{card_value}')
                     continue
 
                 # ====== 模式分支处理 ======#
                 current_max = RESOURCE_CONFIG[card_type]['max']
                 record_attr = RESOURCE_CONFIG[card_type]['record_attr']
                 current_record = getattr(self, record_attr, 0)
-                logger.info(f'🔍 识别卡片: {card_type} | 当前值: {card_value}, 最优值: {current_record}')
+                logger.info(f'识别卡片: {card_type} | 当前值: {card_value}, 最优值: {current_record}')
 
                 # 更新最佳记录
                 if card_value > current_record:
-                    logger.info(f'📈 更新记录: {card_type} | {current_record} → {card_value}')
+                    logger.info(f'更新记录: {card_type} | {current_record} -> {card_value}')
                     setattr(self, record_attr, card_value)
 
                 if selected_card:  # 确认选择模式
                     # 检查是否符合选择条件
                     if (card_type == best_card_type) and (card_value >= best_card_num):
-                        logger.info(f'🎉 确认蹭卡: {card_type} | 当前值: {card_value} ≥ 目标值: {best_card_num}')
-                        self.save_image(push_flag=False, wait_time=0, content=f'🎉 确认蹭卡（{card_type}: {card_value}）')
+                        logger.info(f'确认蹭卡: {card_type} | 当前值: {card_value} >= 目标值: {best_card_num}')
+                        self.save_image(push_flag=False, wait_time=0, content=f'确认蹭卡（{card_type}: {card_value}）')
                         return True
                 else:  # 探索记录模式
                     # 发现完美卡直接返回
                     if card_value >= current_max:
-                        message = f'🎉 完美蹭卡 | {card_type}: {card_value}'
+                        message = f'完美蹭卡 | {card_type}: {card_value}'
                         logger.info(message)
                         self.save_image(push_flag=False, wait_time=0, content=message)
                         return True
@@ -656,7 +656,7 @@ class ScriptTask(GameUi, ReplaceShikigami, KekkaiUtilizeAssets):
             self.perform_swipe_action()
 
         # ============== 终止处理 ==============#
-        logger.warning(f'⚠️ 已达到最大滑动次数{MAX_SWIPES}, 终止流程')
+        logger.warning(f'已达到最大滑动次数{MAX_SWIPES}, 终止流程')
         return None
 
     def perform_swipe_action(self):
