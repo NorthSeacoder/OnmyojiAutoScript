@@ -51,6 +51,7 @@ from tasks.AbyssShadows.config import AbyssShadows
 from tasks.GuildBanquet.config import GuildBanquet
 from tasks.DemonRetreat.config import DemonRetreat
 from tasks.GuildActivityMonitor.config import GuildActivityMonitor
+from tasks.PassiveCooperationResponse.config import PassiveCooperationResponse
 
 # 这一部分是活动的配置-----------------------------------------------------------------------------------------------------
 from tasks.ActivityShikigami.config import ActivityShikigami
@@ -152,6 +153,9 @@ class ConfigModel(ConfigBase):
     guild_banquet: GuildBanquet = Field(default_factory=GuildBanquet)
     demon_retreat: DemonRetreat = Field(default_factory=DemonRetreat)
     guild_activity_monitor: GuildActivityMonitor = Field(default_factory=GuildActivityMonitor)
+
+    # 被动响应任务
+    passive_cooperation_response: PassiveCooperationResponse = Field(default_factory=PassiveCooperationResponse)
 
     def __init__(self, config_name: str=None) -> None:
         """

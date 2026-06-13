@@ -1,0 +1,29 @@
+PassiveCooperationResponse:
+  scheduler:
+    enable: false
+    priority: 999
+    success_interval: 86400
+    failure_interval: 600
+    next_run: "2023-01-01 00:00:00"
+
+  passive_config:
+    orochi:
+      enable: false
+      max_accept_count: -1
+      allowed_inviters: []
+      buff_enable: false
+
+    exploration:
+      enable: false
+      max_accept_count: -1
+      allowed_inviters: []
+      buff_enable: false
+
+    wanted_quests:
+      enable: false
+      max_accept_count: -1
+      allowed_inviters: []
+      allowed_cooperation_types:
+        - jade
+        - cat_food
+        - dog_food
