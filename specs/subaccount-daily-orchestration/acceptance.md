@@ -1,11 +1,30 @@
 # Acceptance: Subaccount Daily Orchestration
 
 **Workspace**: `subaccount-daily-orchestration`
-**Last updated**: 2026-06-07
+**Last updated**: 2026-06-12
 
 ---
 
-## 2026-06-07 Windows Orochi Adapter Verification
+## 2026-06-12 Code Review and Critical Fixes
+
+**Scope**: All `SubAccountRotation` adapters
+
+**Review findings** (via `sdd-reviewer`):
+
+- **Issue #1 [CRITICAL]**: `run_area_boss` finally block inside try-except could not execute when `TaskEnd` raised, breaking config restoration principle.
+- **Issue #2 [HIGH]**: `run_find_jade` lacked `set_next_run` interception for `WantedQuests`, violating interception-over-rewrite principle.
+- **Issue #3 [HIGH]**: `run_daily_trifles_store_sign` lacked `set_next_run` interception, inconsistent with other adapters.
+
+**Resolution**:
+
+All three issues fixed in commit `8748dc5f`:
+1. Moved `area_boss.general_battle.lock_team_enable` restoration outside finally block
+2. Added `WantedQuests` interception in `run_find_jade` to capture `set_next_run("WantedQuests", ...)`
+3. Added `DailyTrifles` interception in `run_daily_trifles_store_sign` to capture `set_next_run("DailyTrifles", ...)`
+
+**Verification**: `py_compile` passed. Ready for real-device validation.
+
+---
 
 **Scope**: `SubAccountRotation` -> `Orochi`
 
