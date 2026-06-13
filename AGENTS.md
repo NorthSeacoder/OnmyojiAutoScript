@@ -30,7 +30,22 @@ Recent history uses Conventional Commit-style messages, for example `fix(RealmRa
 ## Agent-Specific Instructions
 
 Respond in Simplified Chinese when interacting with users. Prefix shell commands with `rtk` where the local environment requires it. If adding project skills, keep the source in `.agents/skills/<skill-name>/SKILL.md` and expose it through relative symlinks instead of duplicating files.
+
+**Real-device validation workflow**: Real-device validation is performed on a Windows PC via SSH connection from the Mac development environment. Use `ssh win` to connect to the Windows machine. The Windows repo path is `C:\Users\64638\OnmyojiAutoScript`. Validation scripts and config helpers should be tested locally first, then synced to Windows (via git or manual copy), and executed in the Windows environment with the actual emulators and game client.
+
 Before working on Windows/OASX/MuMu integration, FindJade small-account flows, or real-device validation, use the project skill at `.agents/skills/oas-windows-dev/SKILL.md`.
+
+## Development Principles
+
+**Patch-first strategy for upstream compatibility**: Prefer minimal, isolated patches over deep refactoring to make future upstream rebases easier. When adding new behavior:
+
+1. **Adapter pattern over injection**: Add new orchestration as normal tasks (like `SubAccountRotation`) instead of injecting hooks into `script.py` or global scheduler code.
+2. **Interception over rewrite**: Use `set_next_run` interception in adapters to prevent side effects on ordinary task schedulers, rather than modifying existing task code.
+3. **Temporary config mutation with restoration**: When an adapter needs different config values, mutate in-memory, run the existing task, and restore original values—don't permanently rewrite configs.
+4. **Narrow entry points**: Call specific methods like `run_current_account()` or `run_store()` instead of full task loops when wrapping existing tasks.
+5. **Guard conditions at task boundaries**: Add time-window checks, feature-flag checks, or skip paths at task entry points rather than throughout existing task logic.
+
+These patterns keep local changes small and isolated, making it easier to pull and merge upstream updates without conflicts.
 
 ## Local FindJade Account Setup
 
