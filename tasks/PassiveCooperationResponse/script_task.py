@@ -70,13 +70,86 @@ class ScriptTask(BaseTask):
         2. 接受次数是否超限
         3. 邀请者是否在白名单
         """
-        # TODO: T1.6 实现验证逻辑
-        pass
+        task_type = invite.task_type
+
+        # 未知类型直接拒绝
+        if task_type == "unknown":
+            return False
+
+        # 获取对应任务的被动配置
+        passive_cfg = self.config.passive_cooperation_response.passive_config
+        if task_type == "orochi":
+            task_cfg = passive_cfg.orochi
+        elif task_type == "exploration":
+            task_cfg = passive_cfg.exploration
+        elif task_type == "wanted_quests":
+            task_cfg = passive_cfg.wanted_quests
+        else:
+            logger.warning(f"Unknown task type: {task_type}")
+            return False
+
+        # 检查 1: 任务类型是否启用
+        if not task_cfg.enable:
+            return False
+
+        # 检查 2: 接受次数是否超限
+        if task_cfg.max_accept_count >= 0:  # -1 表示无限制
+            current_count = self.accept_counts.get(task_type, 0)
+            if current_count >= task_cfg.max_accept_count:
+                return False
+
+        # 检查 3: 邀请者是否在白名单
+        if task_cfg.allowed_inviters:  # 空列表表示接受所有
+            if invite.inviter_name not in task_cfg.allowed_inviters:
+                return False
+
+        # 检查 4: 协作类型过滤（仅 wanted_quests）
+        if task_type == "wanted_quests" and invite.cooperation_type:
+            if invite.cooperation_type not in task_cfg.allowed_cooperation_types:
+                return False
+
+        return True
 
     def _get_rejection_reason(self, invite: InviteInfo) -> str:
         """获取拒绝原因（用于日志）"""
-        # TODO: T1.6 实现
-        return "reason not implemented"
+        task_type = invite.task_type
+
+        # 未知类型
+        if task_type == "unknown":
+            return "Unknown task type"
+
+        # 获取对应任务的被动配置
+        passive_cfg = self.config.passive_cooperation_response.passive_config
+        if task_type == "orochi":
+            task_cfg = passive_cfg.orochi
+        elif task_type == "exploration":
+            task_cfg = passive_cfg.exploration
+        elif task_type == "wanted_quests":
+            task_cfg = passive_cfg.wanted_quests
+        else:
+            return f"Unknown task type: {task_type}"
+
+        # 任务类型未启用
+        if not task_cfg.enable:
+            return f"{task_type} not enabled"
+
+        # 接受次数超限
+        if task_cfg.max_accept_count >= 0:
+            current_count = self.accept_counts.get(task_type, 0)
+            if current_count >= task_cfg.max_accept_count:
+                return f"{task_type} accept count reached limit ({current_count}/{task_cfg.max_accept_count})"
+
+        # 邀请者不在白名单
+        if task_cfg.allowed_inviters:
+            if invite.inviter_name not in task_cfg.allowed_inviters:
+                return f"Inviter '{invite.inviter_name}' not in whitelist"
+
+        # 协作类型不允许（仅 wanted_quests）
+        if task_type == "wanted_quests" and invite.cooperation_type:
+            if invite.cooperation_type not in task_cfg.allowed_cooperation_types:
+                return f"Cooperation type '{invite.cooperation_type}' not allowed"
+
+        return "Unknown reason"
 
     def _execute_task(self, invite: InviteInfo) -> bool:
         """
