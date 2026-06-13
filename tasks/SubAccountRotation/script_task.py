@@ -113,6 +113,22 @@ class ScriptTask(GameUi):
 
     def run_find_jade(self, account) -> bool:
         runner = FindJadeScriptTask(self.config, self.device)
+        original_set_next_run = runner.set_next_run
+        result = {"called": False, "success": None}
+
+        def capture_next_run(task: str, finish: bool = False, success: bool = None,
+                             server: bool = True, target: datetime = None) -> None:
+            if task == "WantedQuests":
+                result["called"] = True
+                result["success"] = success
+                logger.info(
+                    "SubAccountRotation captured WantedQuests next_run from FindJade "
+                    f"success={success}; keep WantedQuests scheduler unchanged"
+                )
+                return
+            original_set_next_run(task, finish=finish, success=success, server=server, target=target)
+
+        runner.set_next_run = capture_next_run
         try:
             success = runner.run_current_account(account)
         except RequestHumanTakeover:
@@ -165,9 +181,25 @@ class ScriptTask(GameUi):
 
     def run_daily_trifles_store_sign(self, account) -> bool:
         runner = DailyTriflesScriptTask(self.config, self.device)
+        original_set_next_run = runner.set_next_run
+        result = {"called": False, "success": None}
         config = self.config.daily_trifles.trifles_config
         original_store_sign = config.store_sign
         original_buy_sushi_count = config.buy_sushi_count
+
+        def capture_next_run(task: str, finish: bool = False, success: bool = None,
+                             server: bool = True, target: datetime = None) -> None:
+            if task == "DailyTrifles":
+                result["called"] = True
+                result["success"] = success
+                logger.info(
+                    "SubAccountRotation captured DailyTrifles next_run "
+                    f"success={success}; keep DailyTrifles scheduler unchanged"
+                )
+                return
+            original_set_next_run(task, finish=finish, success=success, server=server, target=target)
+
+        runner.set_next_run = capture_next_run
         try:
             config.store_sign = True
             config.buy_sushi_count = -1
@@ -305,7 +337,9 @@ class ScriptTask(GameUi):
             logger.exception(e)
             return False
         finally:
+            # 必须在 finally 外层恢复配置，确保 TaskEnd 异常时也能执行
             self.config.area_boss.general_battle.lock_team_enable = original_lock_team_enable
+
         logger.warning(
             "SubAccountRotation AreaBoss returned without TaskEnd "
             f"for {account.character}-{account.svr}"
