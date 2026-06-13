@@ -6,6 +6,7 @@ from typing import Optional, Literal
 from dataclasses import dataclass
 
 from tasks.base_task import BaseTask
+from tasks.PassiveCooperationResponse.assets import PassiveCooperationResponseAssets
 from module.logger import logger
 
 
@@ -19,7 +20,7 @@ class InviteInfo:
     cooperation_type: Optional[str] = None  # 协作类型（玉藻/狗粮/猫粮）
 
 
-class InviteDetector(BaseTask):
+class InviteDetector(BaseTask, PassiveCooperationResponseAssets):
     """邀请检测器"""
 
     def __init__(self, device):
