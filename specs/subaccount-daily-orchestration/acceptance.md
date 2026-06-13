@@ -5,6 +5,37 @@
 
 ---
 
+## 2026-06-13 Real-Device Verification Summary
+
+### Completed Phases
+
+**Phase 1: DailyTriflesStoreSign** - ✅ PASS (with observation)
+- Store gift claimed successfully
+- Config restoration verified
+- Interception not triggered (expected - `run_store()` doesn't call `set_next_run`)
+
+**Phase 2: AreaBoss** - ✅ PASS
+- **Issue #1 fix validated**: Config restoration works even when TaskEnd raised
+- Interception pattern confirmed: "SubAccountRotation captured AreaBoss next_run success=True"
+- `lock_team_enable` preserved correctly
+
+### Pending Phases
+
+**Phase 3: FindJade Cooperation** - ⏳ BLOCKED
+- Config prepared: `cooperation_only=true` set on main
+- Execution blocked by login failure / harvest mail timeout
+- Requires oas_findjade restart
+
+**Phase 4: Orochi** - 📋 READY TO TEST
+- Previously validated on 2026-06-07 (Windows)
+- Can revalidate with current fixes
+
+**Phase 5: Hunt Combat Path** - ⏳ AWAITING TIME WINDOW
+
+**Phase 6: Exploration Hard-28** - ⏳ AWAITING ACCOUNT LEVEL
+
+---
+
 ## 2026-06-13 Real-Device Verification - Phase 2: AreaBoss
 
 **Status**: PASS ✅  
