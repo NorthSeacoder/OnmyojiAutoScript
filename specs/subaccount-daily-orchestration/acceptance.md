@@ -1,7 +1,7 @@
 # Acceptance: Subaccount Daily Orchestration
 
 **Workspace**: `subaccount-daily-orchestration`
-**Last updated**: 2026-06-12
+**Last updated**: 2026-06-13
 
 ---
 
@@ -26,13 +26,59 @@
 - Execution blocked by login failure / harvest mail timeout
 - Requires oas_findjade restart
 
-**Phase 4: Orochi** - 📋 READY TO TEST
-- Previously validated on 2026-06-07 (Windows)
-- Can revalidate with current fixes
+**Phase 4: Orochi** - ✅ PASS (with architectural observation)
+- Single-invite flow validated successfully
+- Main account accepts invite and completes battle
+- Interception confirmed: "SubAccountRotation captured Orochi next_run success=False"
+- Known limitation: Multi-round invites require both accounts' limit_count coordination
 
 **Phase 5: Hunt Combat Path** - ⏳ AWAITING TIME WINDOW
 
 **Phase 6: Exploration Hard-28** - ⏳ AWAITING ACCOUNT LEVEL
+
+---
+
+## 2026-06-13 Real-Device Verification - Phase 4: Orochi
+
+**Status**: PASS ✅ (with architectural observation)  
+**Timestamp**: 14:03:00 - 14:05:57  
+**Environment**: Windows (C:\Users\64638\OnmyojiAutoScript), dual-instance (oas_main + oas_findjade)  
+**Accounts**: Small: 最后的黄泉-月蚀长夜 (leader), Main: 不知庭院 (member)
+
+**Configuration challenges encountered**:
+- Initial failure: `layer` enum validation - fixed `魂十` → `拾层`
+- Initial failure: `orochi_enter()` timeout - small account was stuck in wrong sub-interface (悲鸣)
+- Solution: Manual navigation to correct interface + config restored from clean backup
+
+**Execution log**:
+- 14:03:xx Small account switches and enters Orochi
+- 14:03:xx Creates team for 拾层 (layer 10)
+- 14:03:xx Sends invite to "不知庭院"
+- 14:03:xx Main account accepts invite (via Orochi member mode + scheduler enabled)
+- 14:04:05 Battle completed (score: 1685)
+- 14:04:07 Small attempts second invite ("Wait for 30s and invite again")
+- 14:05:36 Second invite timeout - main account no longer listening
+- 14:05:57 **SubAccountRotation captured Orochi next_run success=False**
+
+**Validation results**:
+- ✅ SubAccountRotation executed successfully
+- ✅ Small account created Orochi room and invited main
+- ✅ Main account accepted invite and joined battle
+- ✅ Battle completed successfully
+- ✅ **Critical: Interception logged** - "SubAccountRotation captured Orochi next_run success=False"
+- ✅ Config verification: `orochi.scheduler.next_run` preserved (not polluted by sub-account run)
+- ⚠️ Multi-round limitation: Main account's Orochi task ended after first battle, did not accept second invite
+
+**Architectural observation**:
+Main account requires `orochi.scheduler.enable=true` to accept invites via burst mechanism, but this creates scheduler pollution risk. Ideal solution: dedicated "passive response" task that monitors invites without occupying normal task schedulers (similar to `cooperation_only` mode). Recorded as future enhancement.
+
+**Issue validations**:
+- Issue #1 (config restoration with TaskEnd): Not directly tested in this adapter, but pattern confirmed working
+- Issue #2 (WantedQuests interception): Not applicable to Orochi
+- Issue #3 (DailyTrifles interception): Not applicable to Orochi
+- New observation: Orochi interception correctly captured `success=False` when invite timeout occurred
+
+**Conclusion**: Single-invite Orochi flow is production-ready. Multi-round invites require both accounts' `limit_count` coordination and passive response architecture (future work).
 
 ---
 
