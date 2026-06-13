@@ -36,16 +36,43 @@ class ScriptTask(BaseTask):
 
         logger.info(f"Listening for: {', '.join(enabled_tasks)}")
 
-        # TODO: T1.9 实现主循环
-        # while True:
-        #     self.screenshot()
-        #     invite = self.detector.detect_invite()
-        #     if invite is None:
-        #         sleep(1)
-        #         continue
-        #     ...
+        while True:
+            self.screenshot()
 
-        raise TaskEnd
+            # 检测邀请
+            invite = self.detector.detect_invite()
+            if invite is None:
+                sleep(1)  # 轮询间隔
+                continue
+
+            logger.info(f"Detected {invite.task_type} invite from {invite.inviter_name}")
+
+            # 验证配置
+            if not self._should_accept_invite(invite):
+                reason = self._get_rejection_reason(invite)
+                logger.info(f"Rejected invite: {reason}")
+                continue
+
+            # 接受邀请
+            logger.info(f"Accepting {invite.task_type} invite from {invite.inviter_name}")
+            if not self.detector.accept_invite():
+                logger.warning("Failed to accept invite")
+                continue
+
+            # 执行对应任务
+            logger.info(f"Executing {invite.task_type} member mode")
+            success = self._execute_task(invite)
+
+            # 更新状态
+            if success:
+                self.accept_counts[invite.task_type] += 1
+                logger.info(f"Completed {invite.task_type} invite (total: {self.accept_counts[invite.task_type]})")
+            else:
+                logger.warning(f"Failed to execute {invite.task_type} member mode")
+
+            # 返回待命态
+            logger.info("Returning to standby state")
+            self.ui_goto_main()
 
     def _get_enabled_tasks(self) -> list[str]:
         """获取已启用的任务类型列表"""
@@ -177,9 +204,51 @@ class ScriptTask(BaseTask):
 
     def _execute_orochi_member(self, invite: InviteInfo) -> bool:
         """执行御魂 member 模式"""
-        # TODO: T1.8 实现
-        logger.info("Execute orochi member (not implemented)")
-        return False
+        from tasks.Orochi.script_task import ScriptTask as OrochiTask
+        from tasks.Orochi.config import UserStatus
+
+        # 保存原始配置
+        original_user_status = self.config.orochi.orochi_config.user_status
+        original_buff_enable = self.config.orochi.orochi_config.soul_buff_enable
+
+        try:
+            # 临时修改为 member 模式
+            self.config.orochi.orochi_config.user_status = UserStatus.MEMBER
+
+            # 应用被动响应的 buff 配置
+            passive_buff_enable = self.config.passive_cooperation_response.passive_config.orochi.buff_enable
+            self.config.orochi.orochi_config.soul_buff_enable = passive_buff_enable
+
+            logger.info(f"Orochi member mode: user_status=MEMBER, buff_enable={passive_buff_enable}")
+
+            # 实例化并拦截 set_next_run
+            runner = OrochiTask(self.config, self.device)
+
+            def capture_next_run(task, finish=False, success=None, server=True, target=None):
+                logger.info(f"PassiveCooperationResponse captured Orochi set_next_run (ignored)")
+                return
+            runner.set_next_run = capture_next_run
+
+            # 调用 run() - 会自动分发到 run_member()
+            runner.run()
+
+            logger.info("Orochi member execution completed successfully")
+            return True
+
+        except TaskEnd:
+            logger.info("Orochi member execution ended (TaskEnd)")
+            return True
+        except RequestHumanTakeover as e:
+            logger.warning(f"Orochi member requires human takeover: {e}")
+            raise  # 向上传播
+        except Exception as e:
+            logger.exception(f"Failed to execute orochi member: {e}")
+            return False
+        finally:
+            # 恢复原始配置
+            self.config.orochi.orochi_config.user_status = original_user_status
+            self.config.orochi.orochi_config.soul_buff_enable = original_buff_enable
+            logger.info(f"Orochi config restored: user_status={original_user_status}, buff_enable={original_buff_enable}")
 
     def _execute_exploration_member(self, invite: InviteInfo) -> bool:
         """执行探索 member 模式"""
