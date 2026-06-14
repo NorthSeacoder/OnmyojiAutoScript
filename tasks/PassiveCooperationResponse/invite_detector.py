@@ -146,20 +146,3 @@ class InviteDetector(PassiveCooperationResponseAssets):
 
         logger.warning(f"Failed to accept invite after {max_attempts} attempts")
         return False
-                continue
-
-            # 点击接受按钮（优先默认接受）
-            if self.appear_then_click(self.INVITE_ACCEPT_DEFAULT_BUTTON, interval=1):
-                logger.info("Clicked accept default button")
-                continue
-
-            # 点击普通接受按钮
-            if self.appear_then_click(self.INVITE_ACCEPT_BUTTON, interval=1):
-                logger.info("Clicked accept button")
-                continue
-
-            # 等待页面响应
-            sleep(0.5)
-
-        logger.warning(f"Failed to accept invite after {max_attempts} attempts")
-        return False
