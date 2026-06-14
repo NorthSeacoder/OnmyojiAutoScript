@@ -15,8 +15,7 @@ class ScriptTask(BaseTask):
     """被动响应任务主逻辑"""
 
     def __init__(self, config, device):
-        super().__init__(device)
-        self.config = config
+        super().__init__(config, device)
         self.detector = InviteDetector(device)
         self.accept_counts = {
             "orochi": 0,
