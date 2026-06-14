@@ -16,7 +16,7 @@ class ScriptTask(BaseTask):
 
     def __init__(self, config, device):
         super().__init__(config, device)
-        self.detector = InviteDetector(device)
+        self.detector = InviteDetector(self)  # Pass self as parent
         self.accept_counts = {
             "orochi": 0,
             "exploration": 0,

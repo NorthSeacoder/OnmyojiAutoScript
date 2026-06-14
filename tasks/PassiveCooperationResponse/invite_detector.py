@@ -6,7 +6,6 @@ from datetime import datetime
 from typing import Optional, Literal
 from dataclasses import dataclass
 
-from tasks.base_task import BaseTask
 from tasks.PassiveCooperationResponse.assets import PassiveCooperationResponseAssets
 from module.logger import logger
 
@@ -21,11 +20,15 @@ class InviteInfo:
     cooperation_type: Optional[str] = None  # 协作类型（玉藻/狗粮/猫粮）
 
 
-class InviteDetector(BaseTask, PassiveCooperationResponseAssets):
+class InviteDetector(PassiveCooperationResponseAssets):
     """邀请检测器"""
 
-    def __init__(self, device):
-        super().__init__(device)
+    def __init__(self, parent):
+        """
+        Args:
+            parent: ScriptTask instance (provides appear, screenshot, ui_get_current_page methods)
+        """
+        self.parent = parent
 
     def detect_invite(self) -> Optional[InviteInfo]:
         """
@@ -35,9 +38,9 @@ class InviteDetector(BaseTask, PassiveCooperationResponseAssets):
             InviteInfo if detected, None otherwise
         """
         # 检测邀请弹窗（优先级：默认 > 普通 > 寄养）
-        if not (self.appear(self.INVITE_POPUP_DEFAULT) or
-                self.appear(self.INVITE_POPUP) or
-                self.appear(self.INVITE_POPUP_JY)):
+        if not (self.parent.appear(self.INVITE_POPUP_DEFAULT) or
+                self.parent.appear(self.INVITE_POPUP) or
+                self.parent.appear(self.INVITE_POPUP_JY)):
             return None
 
         logger.info("Detected invite popup")
@@ -66,7 +69,7 @@ class InviteDetector(BaseTask, PassiveCooperationResponseAssets):
             "orochi" | "exploration" | "wanted_quests" | "unknown"
         """
         # 获取当前页面
-        current_page = self.ui_get_current_page()
+        current_page = self.parent.ui_get_current_page()
         page_name = str(current_page)
 
         logger.info(f"Current page for invite inference: {page_name}")
@@ -112,21 +115,37 @@ class InviteDetector(BaseTask, PassiveCooperationResponseAssets):
 
         max_attempts = 10
         for attempt in range(max_attempts):
-            self.screenshot()
+            self.parent.screenshot()
 
             # 检查是否已进入房间（接受成功）
-            if self.appear(self.IN_ROOM):
+            if self.parent.appear(self.IN_ROOM):
                 logger.info("Successfully entered room")
                 return True
 
             # 取消默认邀请勾选（如果出现）
-            if self.appear_then_click(self.INVITE_NO_DEFAULT, interval=1):
+            if self.parent.appear_then_click(self.INVITE_NO_DEFAULT, interval=1):
                 logger.info("Unchecked default invite")
                 continue
 
             # 点击确定按钮（接受后的确认）
-            if self.appear_then_click(self.INVITE_SURE_BUTTON, interval=1):
+            if self.parent.appear_then_click(self.INVITE_SURE_BUTTON, interval=1):
                 logger.info("Clicked invite sure button")
+                continue
+
+            # 点击接受按钮（默认位置）
+            if self.parent.appear_then_click(self.INVITE_ACCEPT_DEFAULT_BUTTON, interval=1):
+                logger.info("Clicked default accept button")
+                continue
+
+            # 点击接受按钮
+            if self.parent.appear_then_click(self.INVITE_ACCEPT_BUTTON, interval=1):
+                logger.info("Clicked accept button")
+                continue
+
+            sleep(0.5)
+
+        logger.warning(f"Failed to accept invite after {max_attempts} attempts")
+        return False
                 continue
 
             # 点击接受按钮（优先默认接受）
