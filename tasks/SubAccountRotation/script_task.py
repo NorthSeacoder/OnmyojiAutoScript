@@ -28,9 +28,10 @@ class ScriptTask(GameUi):
             self.next_run(success=True)
             raise TaskEnd("SubAccountRotation")
 
-        accounts = self.load_accounts(rotation_config.account_source)
+        # Load accounts from account_list
+        accounts = [acc for acc in rotation.account_list if acc.is_valid()]
         if not accounts:
-            logger.warning("SubAccountRotation has no account")
+            logger.warning("SubAccountRotation has no valid account in account_list")
             self.next_run(success=True)
             raise TaskEnd("SubAccountRotation")
 
@@ -84,12 +85,6 @@ class ScriptTask(GameUi):
 
         self.next_run(success=True)
         raise TaskEnd("SubAccountRotation")
-
-    def load_accounts(self, account_source: AccountSource):
-        if account_source == AccountSource.FIND_JADE:
-            return self.config.find_jade.sup_account_list or []
-        logger.warning(f"Unknown account source: {account_source}")
-        return []
 
     def switch_account(self, account) -> bool:
         try:

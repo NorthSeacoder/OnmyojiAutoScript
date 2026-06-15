@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field, SerializationInfo, ValidationError, model
 
 from tasks.Component.config_base import ConfigBase, DateTime, TimeDelta
 from tasks.Component.config_scheduler import Scheduler
+from tasks.Component.SwitchAccount.switch_account_config import AccountInfo
 
 
 class SubAccountTask(str, Enum):
@@ -22,12 +23,14 @@ class SubAccountTask(str, Enum):
     AREA_BOSS = "AreaBoss"
 
 
-class AccountSource(str, Enum):
-    FIND_JADE = "find_jade"
-
-
 class SubAccountRotationConfig(ConfigBase):
-    account_source: AccountSource = Field(default=AccountSource.FIND_JADE, description="account_source_help")
+    # 批量配置：全部小号的通用服务器
+    default_svr: str = Field(default="", description="default_svr_help")
+    # 批量配置：全部小号是否为安卓（True=安卓，False=苹果）
+    default_apple_or_android: bool = Field(default=True, description="default_apple_or_android_help")
+    # 账号数量（GUI 动态生成对应数量的输入框）
+    account_count: int = Field(default=1, ge=0, le=20, description="account_count_help")
+
     enabled_sub_tasks: str = Field(default=SubAccountTask.LOGIN_ONLY.value, description="enabled_sub_tasks_help")
     account_interval: TimeDelta = Field(default=TimeDelta(hours=13), description="account_interval_help")
     continue_on_switch_failure: bool = Field(default=True, description="continue_on_switch_failure_help")
@@ -69,6 +72,8 @@ class SubTaskHistory(ConfigBase):
 class SubAccountRotation(ConfigBase):
     scheduler: Scheduler = Field(default_factory=Scheduler)
     sub_account_rotation_config: SubAccountRotationConfig = Field(default_factory=SubAccountRotationConfig)
+    # 账号列表（独立管理，不再依赖 FindJade）
+    account_list: list[AccountInfo] = Field(default_factory=list, exclude=False)
     history_list: list[SubTaskHistory] = Field(default_factory=list, exclude=True)
 
     @classmethod
@@ -104,6 +109,8 @@ class SubAccountRotation(ConfigBase):
     def validator_all(cls, v: dict) -> Any:
         if not isinstance(v, dict):
             return v
+
+        # Handle history_list migration
         if "history_list" not in v:
             v["history_list"] = []
 
@@ -121,6 +128,26 @@ class SubAccountRotation(ConfigBase):
 
         for key in remove_keys:
             del v[key]
+
+        # Handle account_list migration
+        if "account_list" not in v:
+            v["account_list"] = []
+
+        remove_keys = []
+        for key, value in v.items():
+            if key == "account_list" or "account_list" not in key:
+                continue
+            try:
+                item = AccountInfo(**value)
+                if item.character:
+                    v["account_list"].append(item)
+                remove_keys.append(key)
+            except (ValidationError, TypeError):
+                pass
+
+        for key in remove_keys:
+            del v[key]
+
         return v
 
     @model_serializer()
