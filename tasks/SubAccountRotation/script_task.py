@@ -35,8 +35,20 @@ class ScriptTask(GameUi):
             raise TaskEnd("SubAccountRotation")
 
         logger.hr("SubAccountRotation")
+
+        # Skip first account if include_current_account is False
+        # Assumption: first account in the list is usually the current account
+        start_index = 0 if rotation_config.include_current_account else 1
+        if start_index > 0:
+            logger.info("SubAccountRotation will skip first account (assumed to be current account)")
+
         handled_accounts = 0
-        for account in accounts:
+        for i, account in enumerate(accounts):
+            # Skip based on include_current_account setting
+            if i < start_index:
+                logger.info(f"SubAccountRotation skip first account {account.character}-{account.svr}")
+                continue
+
             due_sub_tasks = [
                 sub_task for sub_task in sub_tasks
                 if rotation.need_run(account.character, account.svr, sub_task)
