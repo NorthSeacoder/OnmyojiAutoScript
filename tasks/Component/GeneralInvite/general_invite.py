@@ -313,19 +313,34 @@ class GeneralInvite(BaseTask, GeneralInviteAssets):
         self.screenshot()
         self.O_FRIEND_NAME_1.keyword = name
         self.O_FRIEND_NAME_2.keyword = name
-        appear_1 = self.ocr_appear_click(self.O_FRIEND_NAME_1, interval=2)
-        appear_2 = self.ocr_appear_click(self.O_FRIEND_NAME_2, interval=2)
-        if not appear_1 and not appear_2:
+
+        # PATCH: 验证 keyword 是否真正匹配，避免误点其他好友
+        result_1 = self.O_FRIEND_NAME_1.ocr(self.device.image, keyword=name)
+        result_2 = self.O_FRIEND_NAME_2.ocr(self.device.image, keyword=name)
+
+        # 只有真正匹配到 keyword 时才点击
+        clicked = False
+        if result_1 != (0, 0, 0, 0):
+            logger.info(f'Found target friend in FRIEND_NAME_1: {name}')
+            self.device.click(x=self.O_FRIEND_NAME_1.coord()[0], y=self.O_FRIEND_NAME_1.coord()[1], control_name=self.O_FRIEND_NAME_1.name)
+            clicked = True
+        elif result_2 != (0, 0, 0, 0):
+            logger.info(f'Found target friend in FRIEND_NAME_2: {name}')
+            self.device.click(x=self.O_FRIEND_NAME_2.coord()[0], y=self.O_FRIEND_NAME_2.coord()[1], control_name=self.O_FRIEND_NAME_2.name)
+            clicked = True
+
+        if not clicked:
             logger.info('Current page no friend')
             return False
 
-        while appear_1 or appear_2:
+        # 等待选中状态出现
+        for _ in range(10):
             self.screenshot()
             if self.appear(self.I_SELECTED):
-                break
-            appear_1 = self.ocr_appear_click(self.O_FRIEND_NAME_1, interval=2)
-            appear_2 = self.ocr_appear_click(self.O_FRIEND_NAME_2, interval=2)
+                return True
+            sleep(0.3)
 
+        logger.warning('Clicked friend but SELECTED state not detected')
         return True
 
     def invite_friend(self, name: str = None, find_mode: FindMode = FindMode.AUTO_FIND) -> bool:
