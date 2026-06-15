@@ -17,7 +17,7 @@ class ConfigMenu:
         self.menu["Overview"] = []
         self.menu['TaskList'] = []
         # 脚本设置
-        self.menu['Script'] = ['Script', 'Restart', 'GlobalGame']
+        self.menu['Script'] = ['Script', 'Restart', 'GlobalGame', 'SubAccountRotation']
         # 刷御魂
         self.menu["Soul Zones"] = ['Orochi', 'Sougenbi', 'FallenSun', 'EternitySea', 'SixRealms']
         # 日常的任务
@@ -33,7 +33,6 @@ class ConfigMenu:
             "Hyakkiyakou",
             "HeroTest",
             "FindJade",
-            "SubAccountRotation",
             "MemoryScrolls"
         ]
         # 阴阳寮

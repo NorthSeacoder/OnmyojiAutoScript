@@ -48,6 +48,10 @@
   "continue_on_switch_failure": "切号失败继续",
   "continue_on_switch_failure_help": "某个小号登录/切换失败时，是否跳过该小号继续处理后续小号。关闭则整体中止本次轮换。",
   "max_accounts_per_run": "单次最多处理账号数",
-  "max_accounts_per_run_help": "单次轮换最多处理的小号数量，0表示不限制。"
+  "max_accounts_per_run_help": "单次轮换最多处理的小号数量，0表示不限制。",
+  "auto_reset_tasks_on_startup": "启动时自动重置任务",
+  "auto_reset_tasks_on_startup_help": "启动OAS时自动重置所有任务的下次运行时间，使其立即执行。适用于手动切换游戏账号后希望立即执行所有日常任务的场景。建议只在小号配置中启用。",
+  "include_current_account": "包含当前账号",
+  "include_current_account_help": "是否包含账号列表中的第一个账号（通常是当前登录的账号）。启用(默认)：轮换所有账号；禁用：跳过第一个账号，仅轮换其他小号。适用于已手动在当前账号执行任务，只想自动轮换其他小号的场景。"
 }
 
