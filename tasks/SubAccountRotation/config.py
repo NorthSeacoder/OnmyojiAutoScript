@@ -32,6 +32,7 @@ class SubAccountRotationConfig(ConfigBase):
     account_interval: TimeDelta = Field(default=TimeDelta(hours=13), description="account_interval_help")
     continue_on_switch_failure: bool = Field(default=True, description="continue_on_switch_failure_help")
     max_accounts_per_run: int = Field(default=0, ge=0, description="max_accounts_per_run_help")
+    auto_reset_tasks_on_startup: bool = Field(default=False, description="auto_reset_tasks_on_startup_help")
 
     def sub_tasks(self) -> list[SubAccountTask]:
         tasks = []

@@ -570,8 +570,24 @@ class Script:
         self.config.model.running_task = ''
 
         # PATCH: Auto reset tasks on startup if configured
-        if self.config.script.optimization.auto_reset_tasks_on_startup:
-            logger.info('Auto reset tasks on startup is enabled')
+        # Check both Script.optimization and SubAccountRotation config
+        should_reset = False
+
+        # Legacy: Script.optimization.auto_reset_tasks_on_startup (backward compatibility)
+        if hasattr(self.config.script.optimization, 'auto_reset_tasks_on_startup'):
+            if self.config.script.optimization.auto_reset_tasks_on_startup:
+                should_reset = True
+                logger.info('Auto reset enabled via Script.optimization.auto_reset_tasks_on_startup')
+
+        # Recommended: SubAccountRotation.sub_account_rotation_config.auto_reset_tasks_on_startup
+        if hasattr(self.config.model, 'sub_account_rotation'):
+            rotation_config = self.config.model.sub_account_rotation
+            if hasattr(rotation_config.sub_account_rotation_config, 'auto_reset_tasks_on_startup'):
+                if rotation_config.sub_account_rotation_config.auto_reset_tasks_on_startup:
+                    should_reset = True
+                    logger.info('Auto reset enabled via SubAccountRotation.auto_reset_tasks_on_startup')
+
+        if should_reset:
             try:
                 from datetime import datetime
                 reset_time = datetime(2020, 1, 1, 0, 0, 0)
