@@ -46,6 +46,7 @@
   "account_count": "账号数量",
   "account_count_help": "需要轮换的小号数量（1-20）。设置后会自动生成对应数量的账号输入框。",
   "account_list": "账号列表",
+  "account_list_help": "小号轮换的账号列表。如果列表为空，首次运行时会自动从「寻觅曜石(FindJade)」的辅助账号列表导入。导入后可在此独立管理，不再依赖 FindJade 配置。",
   "character": "角色名",
   "character_help": "游戏内角色昵称",
   "svr": "服务器",

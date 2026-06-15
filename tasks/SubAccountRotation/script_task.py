@@ -30,8 +30,20 @@ class ScriptTask(GameUi):
 
         # Load accounts from account_list
         accounts = [acc for acc in rotation.account_list if acc.is_valid()]
+
+        # Fallback: if account_list is empty, try importing from FindJade
         if not accounts:
-            logger.warning("SubAccountRotation has no valid account in account_list")
+            logger.info("SubAccountRotation account_list is empty, checking FindJade for migration")
+            find_jade_accounts = self.config.find_jade.sup_account_list or []
+            if find_jade_accounts:
+                logger.info(f"Found {len(find_jade_accounts)} accounts in FindJade, importing to SubAccountRotation")
+                rotation.account_list = [acc for acc in find_jade_accounts if acc.is_valid()]
+                self.config.save()
+                accounts = rotation.account_list
+                logger.info(f"Imported {len(accounts)} accounts from FindJade to SubAccountRotation")
+
+        if not accounts:
+            logger.warning("SubAccountRotation has no valid account in account_list and FindJade")
             self.next_run(success=True)
             raise TaskEnd("SubAccountRotation")
 
