@@ -32,4 +32,6 @@ class Optimization(BaseModel):
     emulator_startup_lead_time: Time = Field(default=Time(minute=2),
                                             description='emulator_startup_lead_time_help')
     schedule_rule: ScheduleRule = Field(default=ScheduleRule.FILTER, description='schedule_rule_help')
+    auto_reset_tasks_on_startup: bool = Field(default=False,
+                                              description='auto_reset_tasks_on_startup_help')
 

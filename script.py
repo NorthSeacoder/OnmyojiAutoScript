@@ -569,6 +569,17 @@ class Script:
         logger.info(f'Start scheduler loop: {self.config_name}')
         self.config.model.running_task = ''
 
+        # PATCH: Auto reset tasks on startup if configured
+        if self.config.script.optimization.auto_reset_tasks_on_startup:
+            logger.info('Auto reset tasks on startup is enabled')
+            try:
+                from datetime import datetime
+                reset_time = datetime(2020, 1, 1, 0, 0, 0)
+                self.config.model.reset_datetime_for_all_enabled_tasks(reset_time)
+                logger.info('All enabled tasks have been reset to trigger immediately')
+            except Exception as e:
+                logger.warning(f'Failed to auto reset tasks: {e}')
+
         # Update GUI 防呆, 读取设置并立刻显示后台模拟器到前台
         if not self.config.script.device.run_background_only and IS_WINDOWS:
             from module.device.platform2.platform_windows import minimize_by_name, show_window_by_name
@@ -578,7 +589,7 @@ class Script:
                 logger.info(f'重新显示: {target_window_name}')
             else:
                 show_window_by_name(target_window_name)
-                
+
         while 1:
             if date.today() > start_day:
                 with _log_switch_lock:
